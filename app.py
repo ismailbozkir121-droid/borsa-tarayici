@@ -1,16 +1,21 @@
 import os
-import subprocess
 import sys
 
-# Eksik kütüphaneleri otomatik olarak kodun içinde kurma hilesi
-try:
-    import yfinance as yf
-    import ta
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "yfinance", "ta", "apscheduler"])
-    import yfinance as yf
-    import ta
+# Streamlit'in kendi python kütüphane yoluna zorla ekleme yapıyoruz
+# Bu sayede sistem dışarıdan yükleme engeline takılmayacak
+venv_path = "/home/adminuser/venv/lib/python3.14/site-packages"
+if venv_path not in sys.path:
+    sys.path.append(venv_path)
 
+# Kütüphaneleri en başta sessizce yüklemeyi deniyoruz
+try:
+    import pip
+    pip.main(["install", "--target=" + venv_path, "yfinance", "ta"])
+except Exception:
+    pass
+
+import yfinance as yf
+import ta
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -381,7 +386,7 @@ def scan_tickers_core(tickers: list[str], get_df_fn, rsi_min: float, rsi_max: fl
 
         results.append({
             "Hisse": ticker.replace(".IS", ""), "Güç Skoru": power_score, "RSI": round(float(rsi_now), 1),
-            "Sinyaler": " | ".join(signals), "Giriş ₺": round(entry, 2), "Hedef ₺": round(target, 2),
+            "Sinyaller": " | ".join(signals), "Giriş ₺": round(entry, 2), "Hedef ₺": round(target, 2),
             "Hedef %": round(target_pct, 1), "Stop ₺": round(stop, 2), "Stop %": round(stop_pct, 1),
             "Günlük TL Hacim": round(vol_tl_avg10), "_sector": BIST100_SECTORS.get(ticker, ""),
         })
@@ -506,3 +511,4 @@ if scan_btn:
         st.dataframe(df_results, use_container_width=True)
     else:
         st.warning("⚠️ Sinyal veren hisse bulunamadı.")
+
